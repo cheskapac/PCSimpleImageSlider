@@ -97,8 +97,15 @@ static CGFloat const kPageControlHeight = 36;
     self.delegate = self;
 }
 
+#pragma mark - layout
 
-
+- (void)layoutSubviews
+{
+    [super layoutSubviews];
+    
+    CGFloat sizeWidth = ([self proxyData].count * self.bounds.size.width) + (kImageOffset * [self proxyData].count) - kImageOffset;
+    self.contentSize = CGSizeMake(sizeWidth, self.bounds.size.height);
+}
 
 #pragma mark - Main Method
 
