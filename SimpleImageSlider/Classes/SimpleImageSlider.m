@@ -21,14 +21,17 @@
 
 
 
+static CGFloat const kImageOffset = 0;
+static CGFloat const kPageControlHeight = 36;
 
 
 
-const CGFloat ImageOffset = 0;
 
 @interface SimpleImageSlider () <UIScrollViewDelegate>
 @property (nonatomic, strong) UIPageControl *pageControl;
 @end
+
+
 
 
 @implementation SimpleImageSlider
@@ -119,9 +122,9 @@ const CGFloat ImageOffset = 0;
     for (int i = 0; i < [self proxyData].count; i++) {
         
         //create frame size & position
-        CGRect imageSize = CGRectMake(i * width + ImageOffset,
+        CGRect imageSize = CGRectMake(i * width + kImageOffset,
                                       0,
-                                      width - ImageOffset - ImageOffset,
+                                      width - kImageOffset - kImageOffset,
                                       height);
         
         if ([self proxyData] == self.customViews) {
@@ -130,7 +133,11 @@ const CGFloat ImageOffset = 0;
             view.frame = imageSize;
             view.autoresizingMask = UIViewAutoresizingFlexibleHeight;
             view.clipsToBounds = YES;
+            view.translatesAutoresizingMaskIntoConstraints = NO;
             [self addSubview:view];
+
+            [self addConstraint:[NSLayoutConstraint constraintWithItem:view attribute:NSLayoutAttributeWidth relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeWidth multiplier:1.0f constant:0.0f]];
+            [self addConstraint:[NSLayoutConstraint constraintWithItem:view attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeHeight multiplier:1.0 constant:0.0f]];
         }
         else {
             
@@ -139,8 +146,12 @@ const CGFloat ImageOffset = 0;
             imgView.clipsToBounds = YES;
             imgView.backgroundColor = [UIColor colorWithHue:0 saturation:0 brightness:0.83 alpha:1];
             imgView.autoresizingMask = UIViewAutoresizingFlexibleHeight;
+            imgView.translatesAutoresizingMaskIntoConstraints = NO;
             [self addSubview:imgView];
-            
+
+            [self addConstraint:[NSLayoutConstraint constraintWithItem:imgView attribute:NSLayoutAttributeWidth relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeWidth multiplier:1.0f constant:0.0f]];
+            [self addConstraint:[NSLayoutConstraint constraintWithItem:imgView attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeHeight multiplier:1.0 constant:0.0f]];
+
             if ([self proxyData] == self.images) {
                 //get image
                 UIImage *image = self.images[i];
@@ -156,7 +167,7 @@ const CGFloat ImageOffset = 0;
         
     }
     
-    CGFloat sizeWidth = ([self proxyData].count * width) + (ImageOffset * [self proxyData].count) - ImageOffset;
+    CGFloat sizeWidth = ([self proxyData].count * width) + (kImageOffset * [self proxyData].count) - kImageOffset;
     self.contentSize = CGSizeMake(sizeWidth, height);
 }
 
@@ -167,7 +178,7 @@ const CGFloat ImageOffset = 0;
 {
     if (scrollView == self) {
         CGFloat pageWidth = self.frame.size.width;
-        NSUInteger page = floor((self.contentOffset.x - (pageWidth + ImageOffset) / 2.0f) / (pageWidth + ImageOffset)) + 1;
+        NSUInteger page = floor((self.contentOffset.x - (pageWidth + kImageOffset) / 2.0f) / (pageWidth + kImageOffset)) + 1;
         self.pageControl.currentPage = page;
         
         CGFloat height = 30;
@@ -245,12 +256,7 @@ const CGFloat ImageOffset = 0;
     [self.pageControl removeFromSuperview];
     self.pageControl = nil;
     
-    CGFloat height = 30;
-    CGFloat width = self.frame.size.width;
-    CGRect pageControlRect = CGRectMake(0,
-                                        5,
-                                        width,
-                                        height);
+    CGRect pageControlRect = CGRectMake(0, 5, self.bounds.size.width, kPageControlHeight);
     
     self.pageControl = [[UIPageControl alloc] initWithFrame:pageControlRect];
     self.pageControl.numberOfPages = [self proxyData].count;
@@ -258,8 +264,14 @@ const CGFloat ImageOffset = 0;
     self.pageControl.hidesForSinglePage = YES;
     self.pageControl.currentPageIndicatorTintColor = [UIColor whiteColor];
     self.pageControl.pageIndicatorTintColor = [UIColor darkGrayColor];
+    self.pageControl.translatesAutoresizingMaskIntoConstraints = NO;
     [self.pageControl addTarget:self action:@selector(changePage:) forControlEvents:UIControlEventValueChanged];
     [self addSubview:self.pageControl];
+
+    [self addConstraint:[NSLayoutConstraint constraintWithItem:self.pageControl attribute:NSLayoutAttributeWidth relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeWidth multiplier:1.0f constant:0.0f]];
+    [self addConstraint:[NSLayoutConstraint constraintWithItem:self.pageControl attribute:NSLayoutAttributeCenterY relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeCenterY multiplier:1.0 constant:0.0f]];
+    [self addConstraint:[NSLayoutConstraint constraintWithItem:self.pageControl attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeBottom multiplier:1.0 constant:5.0f]];
+    [self addConstraint:[NSLayoutConstraint constraintWithItem:self.pageControl attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:nil attribute:0 multiplier:1.0 constant:kPageControlHeight]];
 }
 
 
