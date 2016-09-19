@@ -8,7 +8,10 @@
 
 @import UIKit;
 
-@interface SimpleImageSlider : UIScrollView
+@interface SimpleImageSlider : UIView
+
+@property (nonatomic, strong, nonnull) UIScrollView *scrollView;
+@property (nonatomic, strong, nullable) UIPageControl *pageControl;
 
 /**
  Designated Initializer for images!

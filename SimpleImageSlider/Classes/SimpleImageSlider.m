@@ -27,13 +27,6 @@ static CGFloat const kPageControlHeight = 36;
 
 
 
-@interface SimpleImageSlider () <UIScrollViewDelegate>
-@property (nonatomic, strong) UIPageControl *pageControl;
-@end
-
-
-
-
 @implementation SimpleImageSlider
 
 #pragma mark - Initialization
@@ -91,10 +84,21 @@ static CGFloat const kPageControlHeight = 36;
 
 - (void)commonInit
 {
-    self.pagingEnabled = YES;
-    self.showsHorizontalScrollIndicator = NO;
+    _scrollView = [[UIScrollView alloc] initWithFrame:self.bounds];
+    _scrollView.pagingEnabled = YES;
+    _scrollView.showsHorizontalScrollIndicator = NO;
+    _scrollView.backgroundColor = [UIColor clearColor];
+    _scrollView.delegate = self;
+    _scrollView.translatesAutoresizingMaskIntoConstraints = NO;
+
+    [self addSubview:_scrollView];
+    
+    [self addConstraint:[NSLayoutConstraint constraintWithItem:_scrollView attribute:NSLayoutAttributeWidth relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeWidth multiplier:1.0f constant:0.0f]];
+    [self addConstraint:[NSLayoutConstraint constraintWithItem:_scrollView attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeHeight multiplier:1.0 constant:0.0f]];
+    [self addConstraint:[NSLayoutConstraint constraintWithItem:_scrollView attribute:NSLayoutAttributeCenterX relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeCenterX multiplier:1.0 constant:0.0f]];
+    [self addConstraint:[NSLayoutConstraint constraintWithItem:_scrollView attribute:NSLayoutAttributeCenterY relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeCenterY multiplier:1.0 constant:0.0f]];
+    
     self.backgroundColor = [UIColor clearColor];
-    self.delegate = self;
 }
 
 #pragma mark - layout
@@ -104,7 +108,7 @@ static CGFloat const kPageControlHeight = 36;
     [super layoutSubviews];
     
     CGFloat sizeWidth = ([self proxyData].count * self.bounds.size.width) + (kImageOffset * [self proxyData].count) - kImageOffset;
-    self.contentSize = CGSizeMake(sizeWidth, self.bounds.size.height);
+    _scrollView.contentSize = CGSizeMake(sizeWidth, self.bounds.size.height);
 }
 
 #pragma mark - Main Method
@@ -118,14 +122,18 @@ static CGFloat const kPageControlHeight = 36;
 
     //first clear out all extant imageviews
     for (UIView *view in self.subviews) {
-        [view removeFromSuperview];
+        if (![view isKindOfClass:[UIScrollView class]]) {
+            [view removeFromSuperview];
+        }
     }
     
     //get sizes
     CGFloat height = self.frame.size.height;
     CGFloat width = self.frame.size.width;
     
-        //iterate through the imageobjects and create an imageview
+    UIView *previousView;
+    
+    //iterate through the imageobjects and create an imageview
     for (int i = 0; i < [self proxyData].count; i++) {
         
         //create frame size & position
@@ -140,10 +148,18 @@ static CGFloat const kPageControlHeight = 36;
             view.frame = imageSize;
             view.clipsToBounds = YES;
             view.translatesAutoresizingMaskIntoConstraints = NO;
-            [self addSubview:view];
+            [_scrollView addSubview:view];
 
             [self addConstraint:[NSLayoutConstraint constraintWithItem:view attribute:NSLayoutAttributeWidth relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeWidth multiplier:1.0f constant:0.0f]];
-            [self addConstraint:[NSLayoutConstraint constraintWithItem:view attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeHeight multiplier:1.0 constant:0.0f]];
+            [self addConstraint:[NSLayoutConstraint constraintWithItem:view attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeHeight multiplier:1.0f constant:0.0f]];
+            [self addConstraint:[NSLayoutConstraint constraintWithItem:view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeTop multiplier:1.0f constant:0.0f]];
+            if (previousView) {
+                [self addConstraint:[NSLayoutConstraint constraintWithItem:view attribute:NSLayoutAttributeLeft relatedBy:NSLayoutRelationEqual toItem:previousView attribute:NSLayoutAttributeRight multiplier:1.0f constant:0.0f]];
+            } else {
+                [self addConstraint:[NSLayoutConstraint constraintWithItem:view attribute:NSLayoutAttributeLeft relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeLeft multiplier:1.0f constant:0.0f]];
+            }
+            
+            previousView = view;
         }
         else {
             
@@ -152,10 +168,16 @@ static CGFloat const kPageControlHeight = 36;
             imgView.clipsToBounds = YES;
             imgView.backgroundColor = [UIColor colorWithHue:0 saturation:0 brightness:0.83 alpha:1];
             imgView.translatesAutoresizingMaskIntoConstraints = NO;
-            [self addSubview:imgView];
+            [_scrollView addSubview:imgView];
 
-            [self addConstraint:[NSLayoutConstraint constraintWithItem:imgView attribute:NSLayoutAttributeWidth relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeWidth multiplier:1.0f constant:0.0f]];
-            [self addConstraint:[NSLayoutConstraint constraintWithItem:imgView attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeHeight multiplier:1.0 constant:0.0f]];
+            [_scrollView addConstraint:[NSLayoutConstraint constraintWithItem:imgView attribute:NSLayoutAttributeWidth relatedBy:NSLayoutRelationEqual toItem:_scrollView attribute:NSLayoutAttributeWidth multiplier:1.0f constant:0.0f]];
+            [_scrollView addConstraint:[NSLayoutConstraint constraintWithItem:imgView attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:_scrollView attribute:NSLayoutAttributeHeight multiplier:1.0 constant:0.0f]];
+            [_scrollView addConstraint:[NSLayoutConstraint constraintWithItem:imgView attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_scrollView attribute:NSLayoutAttributeTop multiplier:1.0f constant:0.0f]];
+            if (previousView) {
+                [_scrollView addConstraint:[NSLayoutConstraint constraintWithItem:imgView attribute:NSLayoutAttributeLeft relatedBy:NSLayoutRelationEqual toItem:previousView attribute:NSLayoutAttributeRight multiplier:1.0f constant:0.0f]];
+            } else {
+                [_scrollView addConstraint:[NSLayoutConstraint constraintWithItem:imgView attribute:NSLayoutAttributeLeft relatedBy:NSLayoutRelationEqual toItem:_scrollView attribute:NSLayoutAttributeLeft multiplier:1.0f constant:0.0f]];
+            }
 
             if ([self proxyData] == self.images) {
                 //get image
@@ -168,12 +190,13 @@ static CGFloat const kPageControlHeight = 36;
                 [imgView setImageAnimatedWithURL:imageURL placeholder:nil];
             }
             
+            previousView = imgView;
         }
         
     }
     
     CGFloat sizeWidth = ([self proxyData].count * width) + (kImageOffset * [self proxyData].count) - kImageOffset;
-    self.contentSize = CGSizeMake(sizeWidth, height);
+    _scrollView.contentSize = CGSizeMake(sizeWidth, height);
 }
 
 
@@ -181,19 +204,10 @@ static CGFloat const kPageControlHeight = 36;
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView
 {
-    if (scrollView == self) {
+    if (scrollView == _scrollView) {
         CGFloat pageWidth = self.frame.size.width;
-        NSUInteger page = floor((self.contentOffset.x - (pageWidth + kImageOffset) / 2.0f) / (pageWidth + kImageOffset)) + 1;
+        NSUInteger page = floor((scrollView.contentOffset.x - (pageWidth + kImageOffset) / 2.0f) / (pageWidth + kImageOffset)) + 1;
         self.pageControl.currentPage = page;
-        
-        CGFloat height = 30;
-        CGFloat width = self.frame.size.width;
-        CGRect pageControlRect = CGRectMake(scrollView.contentOffset.x,
-                                            5,
-                                            width,
-                                            height);
-        
-        self.pageControl.frame = pageControlRect;
     }
 }
 
@@ -202,8 +216,7 @@ static CGFloat const kPageControlHeight = 36;
     CGRect imagesFrame = self.frame;
     imagesFrame.origin.x = imagesFrame.size.width * pageControl.currentPage;
     imagesFrame.origin.y = 0;
-    [self scrollRectToVisible:imagesFrame animated:YES];
-    
+    [_scrollView scrollRectToVisible:imagesFrame animated:YES];
 }
 
 #pragma mark - Setters
@@ -261,9 +274,7 @@ static CGFloat const kPageControlHeight = 36;
     [self.pageControl removeFromSuperview];
     self.pageControl = nil;
     
-    CGRect pageControlRect = CGRectMake(0, 5, self.bounds.size.width, kPageControlHeight);
-    
-    self.pageControl = [[UIPageControl alloc] initWithFrame:pageControlRect];
+    self.pageControl = [[UIPageControl alloc] initWithFrame:CGRectZero];
     self.pageControl.numberOfPages = [self proxyData].count;
     self.pageControl.currentPage = 0;
     self.pageControl.hidesForSinglePage = YES;
@@ -274,9 +285,9 @@ static CGFloat const kPageControlHeight = 36;
     [self addSubview:self.pageControl];
 
     [self addConstraint:[NSLayoutConstraint constraintWithItem:self.pageControl attribute:NSLayoutAttributeWidth relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeWidth multiplier:1.0f constant:0.0f]];
-    [self addConstraint:[NSLayoutConstraint constraintWithItem:self.pageControl attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:0 multiplier:1.0 constant:kPageControlHeight]];
-    [self addConstraint:[NSLayoutConstraint constraintWithItem:self.pageControl attribute:NSLayoutAttributeCenterX relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeCenterX multiplier:1.0 constant:0.0f]];
-    [self addConstraint:[NSLayoutConstraint constraintWithItem:self.pageControl attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeBottom multiplier:1.0 constant:5.0f]];
+    [self addConstraint:[NSLayoutConstraint constraintWithItem:self.pageControl attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:0 multiplier:1.0f constant:kPageControlHeight]];
+    [self addConstraint:[NSLayoutConstraint constraintWithItem:self.pageControl attribute:NSLayoutAttributeCenterX relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeCenterX multiplier:1.0f constant:0.0f]];
+    [self addConstraint:[NSLayoutConstraint constraintWithItem:self.pageControl attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:self attribute:NSLayoutAttributeBottom multiplier:1.0f constant:0.0f]];
 }
 
 
